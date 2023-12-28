@@ -1,0 +1,396 @@
+!================================================
+pynfam/fortran/fortran_utils.py
+!================================================
+
+class nmlInputs(object)
+	: __init__(self, fname, nml=None) is executed in the __init__ of class fortProcess, there nml is not None.
+
+
+
+	def writeNml(self, dest=u',/')
+	:: write to rundir the input file. These input files are possibly read each subprocess.Popen 
+	: dest:  ./tests/pynfam_exmaple/000000/fam_soln/fam_meta/GT-K1/00000?
+	: dest:  ./tests/pynfam_exmaple/000000/hfb_soln/hfb_meta/000?
+	: self.fname_nml: hfbtho_NAMELIST.dat
+	: self.fname_nml: GT-K0.in
+	: self.fname_nml: GT-K1.in
+
+
+
+
+	def readNml(self, source)
+	: looks like this func never been used. 
+
+
+
+	def adjustNml(self, inputs)	
+	:: use input from run_pynfam.py which is 'inputs' here and modify self.nml which is read from pynfam/config.py.
+	:: executed in setNmlParam.
+	: self.nml is content from pynfam/config, based on the value of h1	
+	: config is a two-fold ordered dict. Also from the method .items() we can also see that inputs is dict,
+	: becasue .items() only applies to dict. So whenever we see .items(), we know the object is a dict.  
+
+	
+	: pynfam/config, again, is a two-fold dict, with the inner most value being either a single value(could be string, int, bool) 
+	: or a list. No other exception.
+
+
+	: inputs is from run_pynfam.py, though in the form of pynfam/config.py
+
+
+
+	def setNmlParam(self, param_dict)
+	:: construct a two-fold dict which based on run_pynfam.py and in the end executes adjustNml to modify self.nml based on the two-fold dict.
+	:: executed in pynfam/strength/fam_strength.py, getFamList(self, paths, nml_param=None)
+ 	: param_dict	: one-level dict. with keys inner keys and values run_pynfam.py values.
+	: head_dict	: constructed by dict comprehension and list comprehension based on self.nml, which is equivalent to pynfam/config.py. 
+		   	: Both 'h' and 'hh' are keys. 'h' is the outer key and 'hh' is the inner key. 
+		   	: head_dict = {outer_key1: [inner_key1,inner_key2,inner_key3,.... ],outer_key2: [inner_key1,inner_key2,inner_key3,.... ], ...}
+		   	: which means head_dict is a dict with key str and value list of str.
+	: all_params: constructed by list comprehension based on header_dict. Basically what it does is to extract all the inner_keys and form a list. 
+		    	: it contains ALL the inner parameters (because it is constructed from header_dict which is constructed from self.nml which is 
+		    	: equivalent to pynfam/config.py.   
+      
+	: rogues	: If one make a mistake so that there is wrong input parameters in run_pynfam.py, 'rogues' will filter out this wrong parameters. 	 
+			: param_dict.keys() gives inner keys from run_pynfam.py, not necessary all keys, as it seems depends on hfb or fam. Also the 'ctr' 
+			: parameters is not included in param_dict.
+			: rogues can also be constructed by the instructin below:
+			: rogues  = [ p for p in param_dict if p not in all_params ]
+
+
+	: scan each 'h' in header_dict. Sicne header_dict is a dict with  {outer_key: [inner_keys] }, 'h' here will be a outer_key. Then we 
+	: define a temp dict 'h_dict'. For each 'h' we scan the keys 'p' of param_dict, and if p is in the list of this 'h', we put param_dict[p] inside h_dict. 
+	: This procdure put all the param_dict[p] into h_dict as long as p belongs to header_dict[h]. Then we construct a two-level in_dict[h] = h_dict. 
+	: Notice here the 'h_dict' is already a one-level dict.  	
+
+
+	: Then we use method adjustNml to modify self.nml by the two-level dict 'in_dict'.
+
+
+class fortProcess(nmlInputs)
+	:: derived class of class nmlInputs
+	:: executed in pynfam/fortran/pnfam_run.py, __init__
+	:: executed in pynfam/fortran/hfbtho_run.py, __init__
+	: __init__   	: nml is a two-fold dict,  not None, and would be different(not only values, but also keys) depending on it's hfb or fam. 
+	: exe		: hfbtho_main
+	: exe		: pnfam_nompi.x
+	: fname_nml	: hfbtho_NAMELIST.dat
+	: fname_nml	: GT-K0.in
+	: fname_nml	: GT-K1.in
+
+	def rundir(self)
+	:: gives the fun path all the way to each run dir.
+	: self.paths.out	: ./tests/pynfam_exmaple/
+	: self.label	: 000000/hfb_soln/hfb_meta/000?
+	: self.label	: 000000/fam_soln/fam_meta/GT-K1/00000?
+
+	def runExe(self, stdout_bool=False, statement=None, debug=0)
+	:: 
+        : stdout_bool	: False. Did not ever seen it is True.
+	: self.label	: 000000/hfb_soln/hfb_meta/000?
+	: self.label	: 000000/fam_soln/fam_meta/GT-K1/00000?
+
+	: os.chdir(self.rundir)	: change dir to the run dir.
+	: output_data, err_data  = proc.communicate()	: output_data is already in the form of normal present. err_dat generally is empty.
+	: output	: same as output_data just in the form of list, withouth '\n'.
+	: self.paths.cwd	: current working directory. ( The directory where run_pynfam.py reside.)
+
+!================================================
+pynfam/fortran/pnfam_run.py
+!================================================
+
+class pnfamRun
+	def __init__(self, paths, operator, kval)
+	: self.op	: GT-
+
+	: self.k	: 0
+	: self.k	: 1
+	: exe		: pnfam_nompi.x		
+
+	: self.opname	: GT-K0
+	: self.opname	: GT-K1
+
+
+	: default_nml	: two-level dict.
+	: self.ctr_params	: initialized as None until assigned in pynfam/strength/fam_strength.py, function getFAMList(self, paths, nml_params=None)
+
+
+
+	def __getDEFAULTNml(self, DEFAULT_FAM, paths)
+	: DEFAULTS_FAM	: two-level dict in pynfam/config, totally a copy. Notice DEFAULTS itself is a three-level dict. 
+	: fam_default_nml	: constructed which does not exists before. A temp dict which is to be updated by fam_default. Those updated terms are 
+				: the ones which does not exists in fam_default_nml before.
+
+	: os.path.join(paths.hfb, hfbthoRun.file_fam)	: ./tests/pynfam_example/000000/hfb_soln/solution.hfb
+	: os.path.join(pahts.fam_m, u'opdir', u'eqrpadir')	: ./tests/pynfam_example/000000/fam_soln/fam_meta/opdir/eqrpadir
+	: hfb_input_filename 	: ../../../../hfb_soln/solution.hfb
+
+	: self.opname	: GT-K0
+	: self.opname	: GT-K1
+
+	: self.op	: GT-
+
+	: self.k	: 0
+	: self.k	: 1
+
+
+
+
+
+	def bareop	NOT executed
+	def beta	NOT executed
+	def genopname	NOT executed
+
+	def omega(self)
+	: executed in each rundir. 'energy_start' is not really the start point, but the real part of omega in each rundir.  
+
+	def interaction(self)
+	: return SKM*, or whatever interaction name.
+
+
+	def updaetLogOutput(self, output, get_soln=True)
+	: get_soln	: Always True.
+	: output	: Only the FAM output, its content, sd, is stored in GT-K0.log in   ?/fam_soln/fam_meta/GT-K0/00000?/GT-K0.log. 
+	: sd		: information about Time, Conv,  
+	: err		: False
+	: soln_err_msg	: blank
+
+	def setCtrPoint(self, ctr_pt)
+	:: run as many times as number of omega points for FAM.
+	:: In the end use self.adjustNml(setpoint) to update self.nml
+	:: This kind of function is executed in each rundir, and the self.nml is independent for each rundir. 
+	: ctr_pt	: omega points 
+
+
+	def runExe(self, stdout_bool=False, debug=0)
+	: self.paths.exe	: ./exes/ 
+	: self.exe	: pnfam_nompi.x
+
+	: self.fname_nml: GT-K0.in
+	: self.fname_nml: GT-K1.in
+
+
+	: stmt		: ['./exes/pnfam_nompi.x', 'GT-K0.in']
+	: logfile	: ./tests/pnfam_example/000000/fam_soln/fam_meta/GT-K0/00000?/GT-K?.log
+
+
+
+!================================================
+pynfam/mpi_workflow_beta.py
+!================================================
+
+	:shapefacs	: an object, not list.
+	: ctr_closed	: False
+
+
+!================================================
+pynfam/strength/contour.py
+!================================================
+
+
+class famContour(object) 
+	
+	def __init__(self, contour, override=None)
+	: contour	: is str, CONSTL
+	: override	: is dict, from run_pynfam.py, just only the 'ctr' part.
+	: self._setting	: returned from _getDefaults. Check that below.
+
+	: _ctr_data	: firstly constructed in function _generateCtrData(self), check below. 
+
+	
+	def closed(self)
+	:: return value is True for 'CIRCLE', otherwise it is False. Reason very clear.
+
+	
+	def _getDefaults(self)
+	:: construct default_settings, is one level dict, contiains DEFAULTS:ctr:INTERVAL, DEFAULTS:ctr:CONSTL 
+	: default_raw	: copy from pynfam/config.py, just the'ctr' part, is two level dict
+	: default_settings	: copy from pyfam/config.py, jsut the 'ctr: INTERVAL' part, is one level list. 
+	: self.name	: is str, CONSTL
+	
+
+	def updateSettings(self, override)
+	:: use 'ctr' from run_pynfam.py to update in self._settings which is read from pynfam/config. 
+	:: If any key in run_pynfam.py does not exists in pynfam.py/config, error,  otherwise update self._settings on the exact key.
+	:: in the end call self._generateCtrData(), but why ? Is this necessary? This is already been done in __init__.
+
+	def _generateCtrData(self)
+	:: prepared list of omega points to be used for each rundir.  
+
+
+	def setHfbInterval(self, hfb, beta, shift=0.0)
+	: hfb	: not a dict
+	: Egs	: a numeric
+	: eqrpamax	: a numeric 
+	: hfb.soln_dict	: a dict, detail below:
+			: { 
+			 	Label	: 000000/hfb_soln,
+				Z	: 20,
+				Z-Blk	: 0,
+				N	: 28,
+				N-Blk	: 0,
+				b2	: -0.15,
+				Def	: -0.002614,
+				Energy	: -434.31923,
+				Time	: 0.073,
+				Conv	: Yes,
+				KP	: 0.0+,
+				HFB_Qval: -0.4800400,
+				Eqrpa_max: 5.272876,
+				E_gs	: 5.752916,
+				Total_time: 0.073
+			 }		 
+
+
+	: buff		: 0.0
+	: emain		: 0.0
+	: emax		: 5.272876
+	: shift		: 0.0 
+
+
+	def _contourConstL(self)
+	:: This function is not executed by each rundir, but only once.
+
+	: emin, emax, npts, hw, quad	: 	0.0	6.0		60	0.1	TRAP		This is default from pynfam/config.py
+	: emin, emax, npts, hw, quad	: 	0.0	25.0		11	0.2	TRAP		This from run_pynfam.py
+	: emin, emax, npts, hw, quad	: 	0.0	5.272876	11	0.2	TRAP		This from setHfbInterval
+	: emin, emax, npts, hw, quad	: 	0.0	25.0		11	0.2	TRAP		This from run_pynfam.py
+
+	: ctr		: a list composed of omega points. This function is NOT executed only once, i.e. just one subprocess. And these omega 
+			: inside ctr will be spread to different rundir. 	
+	
+	: hw		: real
+	: hw		: real
+	: hw		: real
+	: hw		: real
+
+
+	def _contourCirle(self)
+	: CCW		: counterclockwise
+	: npts		: 20
+	: quad		: GAUSS
+	: use_gl_str	: True
+	: t0		: 3.1415926
+
+!================================================
+pynfam/strength/fam_strength.py
+!================================================
+
+class famStrength(object)
+
+	!-------------------------------------------
+	def __init__(self, operator, k, contour, nucleus=None)
+	: executed two times, one for k = 0 one for k = 1.
+	: self.op	: GT-
+
+	: self.k	: 0 
+	: self.k	: 1 
+	
+	: nucleus	: (28, 20, 48)
+	: contour	: not an str.  It could be a str which is used to initialize famContour. Here it is already a famContour.
+
+	!-------------------------------------------
+	def getFamList(self, paths, nml_params=None)
+	:: executed NOT each rundir, but twice, one for k = 0 another for k = 1
+	:: return a list composed of pnfamRun object which is to be distributed to the rundir.
+	:: This fucntion should be called by rank = 1 subprocess, the mananger.
+
+	: fam_rep	: pnfamRun object.
+
+	: paths.op(paths.fam_m)	: 000000/fam_soln/fam_meta
+	: self.opname	: GT-K?
+	: fam_rep.label : 000000/fam_soln/fam_meta/GT-K?
+			
+	: nml_params	: one level dict, from run_pynfam.py, override_settings, just the 'fam' dict. 
+
+	: fam_rep.interaction	: SKM*
+
+	: computed_pts	: list of complex omega points. No idea why it's call computed.
+
+	: fam_rep.label	: 000000/fam_soln/fam_meta/GT-K?
+	: str(i).zfill(6)	: 00000?	
+
+
+	!--------------------------------------------
+	def concatFamStr(self, fam_list)
+	:: return a pandas DataFrame which composed of real and imaginary part of strength for each omega point.
+	:: only 'CIRCLE' runs the if statement.
+
+	: for fam_pt in fam_list:
+	      ...
+	      for str_pt in fam_pt.soln_dict[u'Strength']:
+    	      ... 
+	  			: a two fold for loop. 
+				: The outer for loop. From output it shows there are nr_pt of fam_pt in fam_list for GT-K?
+				: The inner for loop. From output it shows there are 2 str_pt items in fam_pt.soln_dict[u'Strength']. 
+				; fam_pt.soln_dict[u'Strength'] is a list, composed of 2 dict,so str_pt is dict, one for Real val and one for Im val. 
+				: This two fold loop are executed two times, one for k = 0 and one for k = 1. 
+	: op_str_dict	: a dict, with two keys, one key is Re(Strength) and its value is a list composed of real part of strength, 
+			: another key is Im(Strength) and its value is a list composed of imaginary part of strength.
+				
+
+	: header_order	: a list.	['Re(Strength)', 'Im(Strength)']
+	: op_str_df= op_str_df[header_order]	: check syntax of pd.DataFrame.  op_str_df is a pd.DataFrame. composed of columns 
+						: with title as its first row. the arguement of pd.DataFrame canbe a list, or just 
+						: a string. If the arguement is a list, its return value will be the columns, WITH 
+						: the 'string' in the list as its first row. If the argument is just a str, the return 
+						: value will just be the column WITHOUT the str as its first row. 
+						: So if you want soem column from the pd.DataFrame and also want to keep the title for 
+						: that columns, construct the argument as a list. Of course if you want multiple columns
+						: the argument has to be a list. It is only when you just wnat a single column that the 
+						: argument can be either a str or a list of that single str.
+
+
+	:: below is analysis with 'CIRCLE'	: 
+	: len(fam_list)	: 10
+	: self.contour.nr_points: 20
+	: self.contour.ctr_z	: contains 20 points, should be used for CIRCLE integration.
+	:: CIRCLE integration are executed 4 times. 2 times with default circle path, one for k = 0 one for k = 1.
+				: another 2 time with calculated circle path, one for k = 9 and one for k = 1. 
+	: endpoints	: False
+	: 
+	: opt_str_df	: the Re(Strength) and Im(Strength), two times , one for k = 0 and another for k = 1.
+	: sym_str_df	: reversed order of opt_str_df but with conjugated imaginary part. It should be used for another part of Fam points. 
+
+
+	def concatFamTime(self, fam_list)
+	: time_list	: a list, composed of numeric time values. 
+	: times		: a list, same as time_list except with less precision.
+
+	def concatFamConv(self, fam_list)
+	: conv_list	: a str list composed of 'Yes'.			
+	: conv		: Yes, a str
+	: data		: a list of pnfamRun object.
+	: self.concatFamConv(data)[1]	: a list of yes from the return of concatFamConv
+	: self.concatFamTime(data)[1]	: a list of numeric from the return of concatFamTime
+
+	: version	: a string,  '710ece2 [2020-05-20] + updates'. Sicne it is same for each omega point, 	
+			: we choose the first omega point data[0]
+	
+	
+
+	def writeStrengthOut(self, dest=u',/', fname=None)
+
+	: self.ctr_param_df	: contains tow columns: Re(EQRPA), Im(EQRPA)	
+	: self.str_df		: contains tow columns: Re(Strength), Im(Strength)	
+	: self.ctr_integ_df	: Empty DataFrame
+	: self.meta_df		: contains tow columns: Time, Conv 	
+
+	: pd.concat(df_list, axis=1) 	: construt and return a new DataFrame from a list of DataFrame df_list
+
+	: op_str_df	: contains dataframe of fam strength. Depending on the operation which could be 'CONSTL' or 'CIRCLE'. 
+
+
+
+	
+!================================================
+pynfam/strength/shape_fator.py
+!================================================
+
+class shapeFactor(object)	
+	
+	: W0 = 1 + (EQRPA_{max} - EQRPA)/m_e c^2
+	: W0 = 1 + (hfb_qval)/MEC2)
+		: which means hfb_qval  = EQRPA_{max} - EQRPA 
+
+
