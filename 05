@@ -236,6 +236,7 @@ class famContour(object)
 
 	def _generateCtrData(self)
 	:: prepared list of omega points to be used for each rundir.  
+	:: this function depends on self._settings, so each time self._setting is updated, we need to run self._generateCtrData again.
 
 
 	def setHfbInterval(self, hfb, beta, shift=0.0)
@@ -315,7 +316,38 @@ class famStrength(object)
 	: self.op	: GT-
 	: self.op[:-1]	: GT
 
-        : genopname	: GT_K?
+
+	def opname(self)
+	: property, str, GT-K0
+	: property, str, GT-K1
+
+	
+	def bareop(self)
+	: property, str, GT
+
+
+	def beta(self)
+	: property, str, -
+
+
+	def genopname(self)
+	: property, str, GT_K0
+	: property, str, GT_K1
+
+
+	def xterms(self)
+	: property, list of str, NOT called in GT-
+
+
+	def nxterms(self)
+	: property, int, 0 because not called in GT-
+
+
+	def meta(self)
+	: property, dict, {'Version': '710ece2 [2020-05-20] + updates', 'Interaction': 'SKM*', 'Time': 0.6615, 'Conv': 'Yes'}
+
+
+
 
 	def cstr_df(self)
 	:: combine Re(Strength) and Im(Strength) to a single column Strength. 
